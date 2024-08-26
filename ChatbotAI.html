@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Support Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            max-height: 100vh;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background-color: #343541;
+            color: #ffffff;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .chat-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            border-top: 1px solid #ddd;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 20px;
+            max-width: 100%;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message .content {
+            padding: 15px;
+            border-radius: 20px;
+            max-width: 50%;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            position: relative;
+        }
+
+        .message.bot .content {
+            background-color: #e6e6e6;
+            color: #333;
+        }
+
+        .message.user .content {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+
+        .button-support {
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            background-color: #0056b3;
+            color: #ffffff;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            box-sizing: border-box;
+            margin-top: 10px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .button-support:hover {
+            background-color: #004494;
+        }
+
+        .chat-footer {
+            padding: 15px;
+            background-color: #ffffff;
+            border-top: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            border-radius: 0 0 8px 8px;
+        }
+
+        #chat-input {
+            width: 100%;
+            min-height: 60px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            outline: none;
+            font-size: 16px;
+            box-sizing: border-box;
+            resize: none;
+            overflow: hidden;
+            white-space: pre-wrap;
+        }
+
+        #send-btn {
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #send-btn:hover {
+            background-color: #0056b3;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            Meiji IT Support Chatbot
+        </div>
+        <div class="chat-body" id="chat-body">
+            <!-- Chat messages will be appended here -->
+        </div>
+        <div class="chat-footer">
+            <textarea id="chat-input" placeholder="Type your message..."></textarea>
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const inputField = document.getElementById('chat-input');
+        const chatBody = document.getElementById('chat-body');
+
+        document.getElementById('send-btn').addEventListener('click', sendMessage);
+
+        inputField.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.ctrlKey) {
+                event.preventDefault();
+                sendMessage();
+            } else if (event.key === 'Enter' && event.ctrlKey) {
+                const cursorPosition = inputField.selectionStart;
+                inputField.value = inputField.value.substring(0, cursorPosition) + '\n' + inputField.value.substring(cursorPosition);
+                inputField.selectionStart = inputField.selectionEnd = cursorPosition + 1;
+                adjustTextAreaHeight();
+            }
+        });
+
+        inputField.addEventListener('input', adjustTextAreaHeight);
+
+        function adjustTextAreaHeight() {
+            inputField.style.height = 'auto';
+            inputField.style.height = `${inputField.scrollHeight}px`;
+        }
+
+        function sendMessage() {
+            const userMessage = inputField.value.trim();
+
+            if (userMessage) {
+                addMessage(userMessage, 'user');
+                inputField.value = '';
+                adjustTextAreaHeight();
+
+                setTimeout(() => {
+                    getBotResponse(userMessage).then(botResponse => {
+                        typeMessage(botResponse, 'bot', userMessage);
+                    });
+                }, 1000);
+            }
+        }
+
+        function addMessage(message, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender);
+
+            const contentElement = document.createElement('div');
+            contentElement.classList.add('content');
+            contentElement.textContent = message;
+
+            messageElement.appendChild(contentElement);
+            chatBody.appendChild(messageElement);
+
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        function typeMessage(message, sender, userMessage) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender);
+
+            const contentElement = document.createElement('div');
+            contentElement.classList.add('content');
+            contentElement.innerHTML = '';
+
+            messageElement.appendChild(contentElement);
+            chatBody.appendChild(messageElement);
+
+            const words = message.split(' ');
+            let index = 0;
+
+            function typeWord() {
+                if (index < words.length) {
+                    contentElement.innerHTML += words[index] + ' ';
+                    index++;
+                    setTimeout(typeWord, 100);
+                } else {
+                    if (userMessage.toLowerCase().includes('it support')) {
+                        showSupportButton(messageElement);
+                    }
+                }
+            }
+
+            typeWord();
+
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        function showSupportButton(messageElement) {
+            const contentElement = messageElement.querySelector('.content');
+
+            if (contentElement) {
+                const button = document.createElement('button');
+                button.className = 'button-support';
+                button.textContent = 'Panggil IT Support';
+                button.onclick = callITSupport;
+
+                messageElement.appendChild(button);
+
+                function adjustButtonWidth() {
+                    button.style.width = `${contentElement.offsetWidth}px`;
+                }
+
+                adjustButtonWidth();
+                window.addEventListener('resize', adjustButtonWidth);
+
+                button.style.opacity = 1;
+            }
+        }
+
+        function callITSupport() {
+            const whatsappNumber = '+6282165123593'; // Ganti dengan nomor WhatsApp Anda
+            const message = 'Halo, saya membutuhkan bantuan dari tim IT.';
+            const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
+        async function getBotResponse(userMessage) {
+            const apiKey = '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'; // Ganti dengan OpenAI API Key Anda
+            const url = 'https://api.openai.com/v1/chat/completions';
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            };
+            const body = JSON.stringify({
+                model: 'gpt-3.5-turbo',
+                messages: [
+                    { role: 'user', 
+                        content: userMessage 
+                    },
+                    { role: 'system', 
+                        content: 'Apabila user menginput mengandung kata "IT Support" maka jawablah dengan "Baik, Anda akan kami arahkan untuk menghubungi IT Support" tanpa "Apakah ada yang bisa saya bantu? " kalau selain itu seperti Halo, test, atau yang lain ya jawab sesuai jawaban kamu saja'
+                    }
+                ],
+                max_tokens: 150
+            });
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: body
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content.trim();
+            } catch (error) {
+                console.error('Error fetching bot response:', error);
+                return 'Maaf, terjadi kesalahan dalam mengambil respons.';
+            }
+        }
+
+        // Initial bot message
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialMessage = "Selamat datang di IT Support Chatbot! Silakan tanyakan kendala Anda, dan kami akan berusaha membantu Anda secepat mungkin. Jika kendala Anda masih berlanjut atau membutuhkan bantuan lebih lanjut, ketik \"IT Support\" untuk meminta bantuan dari tim IT.";
+            addMessage(initialMessage, 'bot');
+        });
+    </script>
+</body>
+</html>
